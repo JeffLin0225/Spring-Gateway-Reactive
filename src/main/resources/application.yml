@@ -1,0 +1,17 @@
+spring:
+  cloud:
+    gateway:
+      routes:
+        - id: auth_route
+          uri: http://localhost:8081
+          predicates:
+            - Path=/auth/**
+        - id: user_route
+          uri: http://localhost:8082
+          predicates:
+            - Path=/user/**
+
+# JWT 配置
+jwt:
+  token:
+    expire: 3600000
