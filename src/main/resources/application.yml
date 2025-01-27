@@ -1,16 +1,17 @@
-spring:
-  cloud:
-    gateway:
-      routes:
-        - id: auth_route
-          uri: http://localhost:8081
-          predicates:
-            - Path=/auth/**
-        - id: user_route
-          uri: http://localhost:8082
-          predicates:
-            - Path=/user/**
-
+# spring:
+#   cloud:
+#     gateway:
+#       routes:
+#         - id: auth_route
+#           uri: http://localhost:8081
+#           predicates:
+#             - Path=/auth/**
+#         - id: user_route
+#           uri: http://localhost:8082
+#           predicates:
+#             - Path=/user/**
+server:
+  port: 8093
 # JWT 配置
 jwt:
   token:
