@@ -11,12 +11,13 @@ public class GatewayConfig {
 
     @Bean
     public RouteLocator customRouteLocator(RouteLocatorBuilder builder) {
+        System.out.println("有盡GatewayConfig");
         return builder.routes()
-                .route("auth_route", r -> r.path("/serviceAtest/**")
-                        .uri("http://localhost:8090")) // 認證服務地址
-                .route("user_route", r -> r.path("/serviceBtest/**")
+                .route("secure_route", r -> r.path("/api/login/**")
+                        .uri("http://localhost:8087")) // 認證服務地址
+                .route("user_route", r -> r.path("/api/writeblog/**")
 //                        .filters(f -> f.filter(jwtAuthGatewayFilterFactory.apply(new Object())))  // 使用過濾器工廠
-                        .uri("http://localhost:8091"))  // 用戶服務地址
+                        .uri("http://localhost:8081"))  // blog
                 .build();
     }
 }
