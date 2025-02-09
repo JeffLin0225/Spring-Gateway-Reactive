@@ -26,7 +26,9 @@ public class SecurityConfig {
     @Bean
     public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http) {
         return http
-                .csrf(ServerHttpSecurity.CsrfSpec::disable)
+        .formLogin(ServerHttpSecurity.FormLoginSpec::disable) // 禁用表單登入
+        .httpBasic(ServerHttpSecurity.HttpBasicSpec::disable)                 
+        .csrf(ServerHttpSecurity.CsrfSpec::disable)
                 .cors(cors -> cors.configurationSource(request -> {
                     CorsConfiguration config = new CorsConfiguration();
                     config.setAllowedOrigins(List.of("http://localhost:5173")); // 指定前端的來源
@@ -37,6 +39,7 @@ public class SecurityConfig {
                 }))
                 .authorizeExchange(exchanges -> exchanges
                         .pathMatchers("/api/login/**").permitAll()
+                        .pathMatchers("/api/blog/**").hasAuthority("boss")
                         .pathMatchers("/api/writeblog/**").hasAuthority("boss")
                         .anyExchange().authenticated()
                 )

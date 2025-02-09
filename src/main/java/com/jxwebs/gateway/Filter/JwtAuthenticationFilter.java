@@ -57,7 +57,7 @@ public class JwtAuthenticationFilter implements WebFilter {
                         return Mono.empty(); // 无效 Token
                     });
         }
-        System.out.println("沒有token");
+        System.out.println("沒有給token");
         // 无 Authorization 头，直接通过过滤器链
         return chain.filter(exchange);
 
