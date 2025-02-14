@@ -6,6 +6,7 @@ import java.util.List;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
 import org.springframework.security.config.web.server.SecurityWebFiltersOrder;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
@@ -24,28 +25,28 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http) {
-        return http
-        .formLogin(ServerHttpSecurity.FormLoginSpec::disable) // 禁用表單登入
-        .httpBasic(ServerHttpSecurity.HttpBasicSpec::disable)                 
-        .csrf(ServerHttpSecurity.CsrfSpec::disable)
-                .cors(cors -> cors.configurationSource(request -> {
-                    CorsConfiguration config = new CorsConfiguration();
-                    config.setAllowedOrigins(List.of("http://localhost:5173")); // 指定前端的來源
-                    config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-                    config.setAllowedHeaders(List.of("*"));
-                    config.setAllowCredentials(true);
-                    return config;
-                }))
-                .authorizeExchange(exchanges -> exchanges
-                        .pathMatchers("/api/login/**").permitAll()
-                        .pathMatchers("/api/blog/**").hasAuthority("boss")
-                        .pathMatchers("/api/writeblog/**").hasAuthority("boss")
-                        .anyExchange().authenticated()
-                )
-                .addFilterAt(new JwtAuthenticationFilter(jwtUtility),
-                        SecurityWebFiltersOrder.AUTHENTICATION)
-                .build();
-    }
+public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http) {
+    return http
+            .cors(cors -> cors.configurationSource(request -> {
+                CorsConfiguration config = new CorsConfiguration();
+                config.setAllowedOrigins(List.of("https://jxwebs.com"));
+                config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+                config.setAllowedHeaders(List.of("*"));
+                config.setAllowCredentials(true);
+                return config;
+            }))
+            .formLogin(ServerHttpSecurity.FormLoginSpec::disable)
+            .httpBasic(ServerHttpSecurity.HttpBasicSpec::disable)
+            .csrf(ServerHttpSecurity.CsrfSpec::disable)
+            .authorizeExchange(exchanges -> exchanges
+                    .pathMatchers("/api/login/**").permitAll()
+                    .pathMatchers("/api/blog/**").permitAll()
+                    .pathMatchers("/api/writeblog/**").hasAuthority("boss")
+                    .pathMatchers(HttpMethod.OPTIONS, "/**").permitAll() // 允許 OPTIONS
+                    .anyExchange().authenticated()
+            )
+            .addFilterAt(new JwtAuthenticationFilter(jwtUtility), SecurityWebFiltersOrder.AUTHENTICATION)
+            .build();
+}
 
 }
