@@ -1,6 +1,11 @@
 package com.jxwebs.gateway.Filter;
 
 import com.jxwebs.gateway.Common.JsonWebTokenUtility;
+
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.ReactiveSecurityContextHolder;
@@ -17,13 +22,10 @@ import java.util.Collections;
 
 @Component
 public class JwtAuthenticationFilter implements WebFilter {
-
     private final JsonWebTokenUtility jwtUtility;
-//    private final ReactiveUserDetailsService userDetailsService;
 
     public JwtAuthenticationFilter(JsonWebTokenUtility jwtUtility) {
         this.jwtUtility = jwtUtility;
-//        this.userDetailsService = userDetailsService;
     }
 
     @Override
@@ -32,34 +34,42 @@ public class JwtAuthenticationFilter implements WebFilter {
 
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             String token = authHeader.substring(7);
-
-            // 验证 Token 并提取用户名和权限
             return jwtUtility.validateToken(token)
                     .flatMap(claims -> {
                         if (claims != null) {
-                            System.out.println("有認證: "+"claims[0]"+claims[0]+" , claims[1]"+claims[1]);
                             String username = claims[0];
-                            String authority = claims[1];  // 假設 role 是權限字串
-
-                            // 創建認證令牌
+                            String authority = claims[1];
                             UsernamePasswordAuthenticationToken authenticationToken =
                                     new UsernamePasswordAuthenticationToken(
                                             username, null, Collections.singletonList(new SimpleGrantedAuthority(authority))
                                     );
-
-                            // 创建 SecurityContext
                             SecurityContext securityContext = new SecurityContextImpl(authenticationToken);
-
-                            // 将 SecurityContext 设置到上下文中
                             return chain.filter(exchange)
                                     .contextWrite(ReactiveSecurityContextHolder.withSecurityContext(Mono.just(securityContext)));
                         }
-                        return Mono.empty(); // 无效 Token
-                    });
+                        // Token 無效，返回 401
+                        return unauthorizedResponse(exchange, "Invalid token");
+                    })
+                    .switchIfEmpty(unauthorizedResponse(exchange, "Invalid token"));
         }
-        System.out.println("沒有給token");
-        // 无 Authorization 头，直接通过过滤器链
-        return chain.filter(exchange);
 
+        // 檢查是否需要認證的路徑
+        String path = exchange.getRequest().getPath().toString();
+        if (path.startsWith("/api/login") || path.startsWith("/api/blog") || exchange.getRequest().getMethod() == HttpMethod.OPTIONS) {
+            // 公開路徑或 OPTIONS 請求，放行
+            return chain.filter(exchange);
+        }
+
+        // 沒有 token 且需要認證，返回 401
+        System.out.println("沒有給token");
+        return unauthorizedResponse(exchange, "Missing token");
+    }
+
+    private Mono<Void> unauthorizedResponse(ServerWebExchange exchange, String message) {
+        ServerHttpResponse response = exchange.getResponse();
+        response.setStatusCode(HttpStatus.UNAUTHORIZED);
+        response.getHeaders().setContentType(MediaType.APPLICATION_JSON);
+        String body = "{\"error\": \"Unauthorized\", \"message\": \"" + message + "\"}";
+        return response.writeWith(Mono.just(response.bufferFactory().wrap(body.getBytes())));
     }
 }
